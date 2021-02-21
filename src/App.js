@@ -1,15 +1,30 @@
-import React, { useState  } from 'react'
-import { isEmpty } from 'lodash'
+import React, { useState } from 'react'
+import { isEmpty, size } from 'lodash'
 import shortid from 'shortid'
 
-function App() {
+function App() {  
   const [task, setsTask] = useState("")
   const [tasks, setTasks] = useState([])
+  const [editMode, setEditMode] = useState(false)
+  const [id, setId] = useState("")
+  const [error, setError] = useState(null)
+
+  const validForm = () => {
+    let isValid = true
+    setError(null)
+    
+    if (isEmpty(task)) {
+      setError("Debes ingresar una tarea.")
+      isValid = false
+    }
+    
+    return isValid
+  }
 
   const addTask = (e) => {
     e.preventDefault()
-    if (isEmpty(task)){
-      console.log("Task empty")
+    
+    if (!validForm()){
       return
     }
     
@@ -18,8 +33,34 @@ function App() {
       name: task
     }
 
-    setTasks([  ...tasks, newTask ])
+    setTasks([ ...tasks, newTask ])
     setsTask("")
+  }
+
+  const saveTask = (e) => {
+    e.preventDefault()
+    if (isEmpty(task)) {
+      console.log("Task empty")
+      return
+    }
+    
+    const editedTasks = tasks.map(item => item.id === id ? {id, name: task} : item)
+    setTasks(editedTasks)
+    setEditMode(false)
+    setsTask("")
+    setId("")
+  }
+
+
+  const deleteTask = (id) => {
+    const filteredTasks = tasks.filter(task => task.id !== id)
+    setTasks(filteredTasks)
+  }
+
+  const editTask = (theTask) => {
+    setsTask(theTask.name)
+    setEditMode(true)
+    setId (theTask.id)
   }
 
   return (
@@ -28,30 +69,56 @@ function App() {
       <hr/>
       <div className="row">
         <div className="col-8">
-          <h4 className="Text-center">Lista de Tareas</h4>
-          <ul className="List-group"> 
-            {
-              tasks.map((task) => (
-                <li className="List-group-item" key={task.id}>
-                  <span className="lead">{task.name}</span>
-                  <button className="btn btn-danger btn-sn float-right mx-2">Eliminar</button>
-                  <button className="btn btn-warning btn-sn float-right">Editar</button>
-                </li>
-              ))   
-            }
-          </ul>  
+          <h4 className="text-center">Lista de Tareas</h4>
+          {
+            size(tasks) === 0 ? (
+              <li className="list-group-item">Aun no hay tareas.</li>
+            ) : (
+              <ul className="list-group"> 
+                {
+                  tasks.map((task) => (
+                    <li className="list-group-item" key={task.id}>
+                      <span className="lead">{task.name}</span>
+                      <button 
+                        className="btn btn-danger btn-sm float-right mx-2"
+                        onClick={() => deleteTask(task.id)}
+                      >
+                        Eliminar
+                      </button>
+                      <button 
+                        className="btn btn-warning btn-sm float-right"
+                        onClick={() => editTask(task)}
+                      >
+                        Editar
+                      </button>
+                    </li>
+                  ))   
+                }
+              </ul>
+            )
+          }
         </div>
         <div className="col-4">
-          <h4 className="Text-center">Formulario</h4>
-          <form onSubmit={addTask}>
+          <h4 className="text-center">
+            { editMode ? "Modificar Tarea" : "Agregar Tarea" }
+          </h4>
+          <form onSubmit={ editMode ? saveTask : addTask }>
             <input
-            type="text"
-            className="form-control mb-2"
-            placeholder="Ingrese la tarea..."
-            onChange={(text) => setsTask(text.target.value)}
-            value ={task}
+              type="text"
+              className="form-control mb-2"
+              placeholder="Ingrese la tarea..."
+              onChange={(text) => setsTask(text.target.value)}
+              value ={task}
             />
-            <button className="btn btn-dark btn-block" type='submit'>Agregar</button>
+            {
+              error && <span className="text-danger">{error}</span> 
+            }
+            <button 
+              className={ editMode ? "btn btn-warning btn-block" : "btn btn-dark btn-block" }
+              type='submit'
+            >
+              { editMode ? "Guardar" : "Agregar" }
+            </button>
           </form>
         </div>
       </div>
